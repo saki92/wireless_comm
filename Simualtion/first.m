@@ -1,0 +1,22 @@
+clear;
+
+%% Declaration
+P = 4; %No of transmit antennas
+K = 2; %No of users (receivers)
+Q = 2; %No of antennas per user
+
+%Channel Matrix%
+H = cell(1,K);
+for k = 1:K
+    H{k} = zeros(Q,P);
+    for q = 1:Q
+        H{k}(q,:) = randn(1,P);
+    end
+end
+
+%Init beamforming weights%
+B = cell(1,K);
+for k = 1:K
+    B{k} = ones(P,Q);
+end
+
