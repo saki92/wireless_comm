@@ -2,7 +2,7 @@ clear;
 
 %% Declaration
 P = 4; %No of transmit antennas
-K = 2; %No of users (receivers)
+K = 4; %No of users (receivers)
 Q = 2; %No of antennas per user
 
 %Channel Matrix%
@@ -21,22 +21,18 @@ B = 1/sumsqr(abs(Hm'))*Hm'; %zero forcing matched filter
 %R = eye(Q);
 Etx = 1; %transmit power
 
-%% Compute WMMSE matrix
-
+%% SNR vs sum-rate plot
+SNR = (-10:5:30);
+Etxm = 10.^(SNR/10);
 H = mat2cell(Hm,Q*ones(1,K)); %convert matrix to cell for ease of iteration
-
-n = 1;
-a = 1;
-while a == 1
-    [B,Rate] = sumRateCompute(B,H,Hm,P,K,Q,Etx);
-    sumRate(n) = abs(sum(Rate));
-    if n == 1
-        a = 1;
-    elseif n > 300 || abs(sumsqr(abs(sumRate(n)))-sumsqr(sumRate(n-1))) < 10^-22 %to control while loop
-        a = 0;
+for s = 1:length(SNR)
+    Etx = Etxm(s);
+    for n = 1:30 %fixed no of iterations
+        [B,Rate] = sumRateCompute(B,H,Hm,P,K,Q,Etx);
+        %calc no of iterations
+        n = n + 1;
+        sumRate(n) = abs(sum(Rate));
     end
-
-    n = n + 1;
-    
+    f_sumRate(s) = sumRate(30);
 end
-plot([1:length(sumRate)],sumRate,'-kx');
+plot(SNR,f_sumRate,'-rx');
