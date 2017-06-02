@@ -17,6 +17,6 @@ T = [];
 for k = 1:K
     for m = 0:M-1
         T(m+1,k) = abs( Hm(m*Nt+1:(m*Nt+1)+Nt-1,k)' * ...
-            P(m*Nt+1:(m*Nt+1)+Nt-1,k) )^2; 
+            P(m*Nt+1:(m*Nt+1)+Nt-1,k) )^2;
     end
 end
