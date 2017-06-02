@@ -20,12 +20,16 @@ for k = 1:K
         for i = 1:K
             if i ~= k
                 Ik = abs( Hm(m*Nt+1:(m*Nt+1)+Nt-1,k)' * ...
-                    P(m*Nt+1:(m*Nt+1)+Nt-1,i) )^2 + sigma;
+                    P(m*Nt+1:(m*Nt+1)+Nt-1,i) )^2 + sigma; %Interfearence power
             end
         end
         T(m+1,k) = abs( Hm(m*Nt+1:(m*Nt+1)+Nt-1,k)' * ...
-            P(m*Nt+1:(m*Nt+1)+Nt-1,k) )^2;
+            P(m*Nt+1:(m*Nt+1)+Nt-1,k) )^2; %Average power
         G(m+1,k) = P(m*Nt+1:(m*Nt+1)+Nt-1,k)' *...
-            Hm(m*Nt+1:(m*Nt+1)+Nt-1,k) / T(m+1,k);
+            Hm(m*Nt+1:(m*Nt+1)+Nt-1,k) / T(m+1,k); %Equalizer matrix
+        U(m+1,k) = inv( T(m+1,k) \ Ik); %MMSE weights
+        t(m+1,k) = U(m+1,k) * abs( G(m+1,k) )^2;
+        eta{m+1,k} = t(m+1,k) * Hm(m*Nt+1:(m*Nt+1)+Nt-1,k) * ...
+            Hm(m*Nt+1:(m*Nt+1)+Nt-1,k)';
     end
 end
