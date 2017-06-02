@@ -5,6 +5,7 @@ Nt = 2; %no of transmit antennas
 K = 2; %no of receivers
 Q = 1; %no of antennas per receiver
 M = 10; %no of channel realizations
+sigma = 0.5; %noise covariance
 
 Hm = [];
 for m = 1:M
@@ -16,7 +17,15 @@ P = ( 1 / sumsqr(abs(Hm')) * Hm' ).';
 T = [];
 for k = 1:K
     for m = 0:M-1
+        for i = 1:K
+            if i ~= k
+                Ik = abs( Hm(m*Nt+1:(m*Nt+1)+Nt-1,k)' * ...
+                    P(m*Nt+1:(m*Nt+1)+Nt-1,i) )^2 + sigma;
+            end
+        end
         T(m+1,k) = abs( Hm(m*Nt+1:(m*Nt+1)+Nt-1,k)' * ...
             P(m*Nt+1:(m*Nt+1)+Nt-1,k) )^2;
+        G(m+1,k) = P(m*Nt+1:(m*Nt+1)+Nt-1,k)' *...
+            Hm(m*Nt+1:(m*Nt+1)+Nt-1,k) / T(m+1,k);
     end
 end
