@@ -5,8 +5,9 @@ Nt = 2; %no of transmit antennas
 K = 2; %no of receivers
 Q = 1; %no of antennas per receiver
 M = 10; %no of channel realizations
-sigma = 0.5; %noise covariance
-Pt = 0.5; %total transmit power
+sigma = 1; %noise covariance
+SNR = 10; %dB
+Pt = 10.^(SNR/10); %total transmit power
 
 Hm = [];
 for m = 1:M
@@ -44,11 +45,12 @@ expression S;
 for k = 1:K
     p_eta = 0;
     for i = 1:K
-        p_eta = p_eta + P_opt(:,i)' * mean( eta(:, k) ) * P_opt(:, i);
+        p_eta = p_eta + ( P_opt(:,i)' * reshape(mean(eta(:,k,:,:),1),Nt,Nt)...
+            * P_opt(:, i) );
     end
     temp_f = mean(f(:,k,:),1);
-    S = S + p_eta + ( sigma * mean( t(:, k) ) ) - ( 2 * real(reshape(temp_f(1,1,:),2,1)'...
-        *P_opt(:, k))) + mean( U(:, k) ) - mean( v(:, k) );
+    S = S + p_eta + ( sigma * mean( t(:, k) ) ) - ( 2 * real(reshape...
+        (temp_f(1,1,:),2,1)'*P_opt(:, k))) + mean( U(:, k) ) - mean( v(:, k) );
 end
 
 expression pwr;
@@ -61,3 +63,4 @@ subject to
 pwr <= Pt;
 
 cvx_end
+P_opt
