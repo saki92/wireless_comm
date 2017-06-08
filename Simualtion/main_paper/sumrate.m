@@ -9,20 +9,22 @@ sigma = 1; %noise covariance
 SNR = 10; %dB
 Pt = 10.^(SNR/10); %total transmit power
 
-Hm = [];
-for m = 1:M
-    Hm = [ Hm ; ( 1/sqrt(2) ) * ( randn(Nt,Q*K) + 1i*randn(Nt,Q*K) ) ];
+Hm = zeros(Nt*M,K);
+for m = 1:2:M*Nt-1
+    Hm(m:m+1,:) = [ ( 1/sqrt(2) ) * ( randn(Nt,Q*K) + 1i*randn(Nt,Q*K) ) ];
 end
 
 P = ( 1 / sumsqr(abs(Hm')) * Hm' ).';
 SVal_bar_n = [];
+
 
 %% Transmit filter calc
 a = 1;
 n = 0;
 while a == 1
     SVal = [];
-    T = [];
+    T = zeros(M*Nt, K); G = zeros(M*Nt, K); U = zeros(M*Nt, K); v = zeros(Nt*M,K);
+    t = zeros(M*Nt, K); Psi = zeros(M*Nt,K,Nt,Nt); f = zeros(M*Nt,K,Nt);
     for k = 1:K
         for m = 0:M-1
             for i = 1:K
@@ -32,7 +34,7 @@ while a == 1
                 end
             end
             T(m+1,k) = abs( Hm(m*Nt+1:(m*Nt+1)+Nt-1,k)' * ...
-                P(m*Nt+1:(m*Nt+1)+Nt-1,k) )^2; %Average power
+                P(m*Nt+1:(m*Nt+1)+Nt-1,k) )^2 + Ik; %Average power
             G(m+1,k) = P(m*Nt+1:(m*Nt+1)+Nt-1,k)' *...
                 Hm(m*Nt+1:(m*Nt+1)+Nt-1,k) / T(m+1,k); %Equalizer matrix
             U(m+1,k) = inv( T(m+1,k) \ Ik); %MMSE weights
@@ -59,7 +61,8 @@ while a == 1
             end
             temp_f = mean(f(:,k,:),1);
             S = S + p_Psi + ( sigma * mean( t(:, k) ) ) - ( 2 * real(reshape...
-                (temp_f(1,1,:),2,1)'*P_opt(:, k))) + mean( U(:, k) ) - mean( v(:, k) );
+                (temp_f(1,1,:),2,1)'*P_opt(:, k))) + mean( U(:, k) )...
+                - mean( v(:, k) );
         end
 
         expression pwr;
@@ -80,7 +83,7 @@ while a == 1
     n = n + 1;
     if ~exist('Sold','var')
         a = 1;
-    elseif n > 4 || abs(Sold - S) < .000001 %to control while loop
+    elseif n > 4 %|| abs(Sold - S) < .000001 %to control while loop
         a = 0;
     end
     
@@ -88,3 +91,4 @@ while a == 1
     P = P_opt_all;
     %a = 0;
 end
+plot(1:n, SVal_bar_n,'-b*');
