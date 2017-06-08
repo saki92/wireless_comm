@@ -2,13 +2,13 @@ clear;
 clc;
 
 Nt = 2; %no of transmit antennas
-K = 2; %no of receivers
+K = 3; %no of receivers
 Q = 1; %no of antennas per receiver
 M = 10; %no of channel realizations
 sigma = 1; %noise covariance
-SNR = 10; %dB
+SNR = 5:5:35; %dB
 Pt = 10.^(SNR/10); %total transmit power
-nofit = 3;
+nofit = 3; %no of validation iteration
 
 %%%%%%%%%%% Channel %%%%%%%%%
 Hcap = ( 1/sqrt(2) ) * ( randn(Nt,K) + 1i*randn(Nt,K) ); %estimate
@@ -48,7 +48,7 @@ for ite = 1:nofit %%main loop for averaging Sum Rate
         end
 
         P_opt_all = [];
-
+%%%%%%%%%%% CVX %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         cvx_begin quiet
         variable P_opt(Nt, K) complex;
 
@@ -62,7 +62,7 @@ for ite = 1:nofit %%main loop for averaging Sum Rate
             end
             temp_f = mean(f(:,k,:),1);
             S = S + p_Psi + ( sigma * mean( t(:, k) ) ) - ( 2 * real(reshape...
-                (temp_f(1,1,:),2,1)'*P_opt(:, k))) + mean( U(:, k) )...
+                (temp_f(1,1,:),Nt,1)'*P_opt(:, k))) + mean( U(:, k) )...
                 - mean( v(:, k) );
         end
 
@@ -76,13 +76,13 @@ for ite = 1:nofit %%main loop for averaging Sum Rate
         pwr <= Pt;
 
         cvx_end
-
+%%%%%%%%%%% CVX %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         SVal = [SVal, S]; %value of cost functions over all iterations
         n = n + 1;
         if ~exist('Sold','var')
             a = 1;
-        elseif n > 10 %|| abs(Sold - S) < .000001 %to control while loop
-            a = 0;
+        elseif n > 10 || abs(Sold - S) < .01 %to control while loop
+            break;
         end
 
         Sold = S;
@@ -101,6 +101,6 @@ for ite = 1:nofit %%main loop for averaging Sum Rate
         gamma(k) = abs( Hcap(:,k)' * P(:,k,1) )^2 / Ik;
         Rate(k) = log2(1+gamma(k));
     end
-    SRate(ite) = sum(Rate);
+    SRate(ite) = sum(Rate); %sum rate for one set of error samples
 end
-AvRate = mean(SRate); %
+AvRate = mean(SRate); %averaged sum rate
