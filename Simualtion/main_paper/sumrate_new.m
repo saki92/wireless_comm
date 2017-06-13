@@ -2,23 +2,23 @@ clear;
 clc;
 
 Nt = 2; %no of transmit antennas
-K = 3; %no of receivers
+K = 2; %no of receivers
 Q = 1; %no of antennas per receiver
-M = 10; %no of channel realizations
+M = 5; %no of channel realizations
 sigma = 1; %noise covariance
-SNR = 5:2:35; %dB
+SNR = -5:5:15; %dB
 PtL = 10.^(SNR/10); %total transmit power
-nofit = 3; %no of validation iteration
+noofit = 10; %no of validation iteration
 
 %%%%%%%%%%% Channel %%%%%%%%%
 Hcap = ( 1/sqrt(2) ) * ( randn(Nt,K) + 1i*randn(Nt,K) ); %estimate
 
 AvRate = zeros(length(SNR),1);
-for p = 1:length(PtL)
+for p = 1:length(PtL) %for each SNR values
     Pt = PtL(p);
-    for ite = 1:nofit %%main loop for averaging Sum Rate
+    for ite = 1:noofit %main loop for averaging Sum Rate
 
-        Htil = [ ( 1/sqrt(2) ) * ( randn(Nt,K,M) + 1i*randn(Nt,K,M) ) ]; %error samples
+        Htil = ( 1/sqrt(2) ) * ( randn(Nt,K,M) + 1i*randn(Nt,K,M) ); %error samples
         H = Hcap + Htil; %actual
         %%%%%%%%%%% Channel %%%%%%%%%
         Ppre = ( 1 / sumsqr(abs(permute(conj(H),[2,1,3]))) * permute(conj(H),[2,1,3]) );
@@ -29,7 +29,7 @@ for p = 1:length(PtL)
         a = 1;
         n = 0;
         SVal = [];
-        while a == 1 %% Loop for convergance of Tx matrix
+        while a == 1 % Loop for convergance of Tx matrix
             T = zeros(M*Nt, K); G = zeros(M*Nt, K); U = zeros(M*Nt, K); v = zeros(Nt*M,K);
             t = zeros(M*Nt, K); Psi = zeros(M*Nt,K,Nt,Nt); f = zeros(M*Nt,K,Nt);
             for k = 1:K
@@ -70,12 +70,15 @@ for p = 1:length(PtL)
             end
 
             expression pwr;
+            pwr = 0;
             for k = 1:K
                 pwr = pwr + sum_square_abs( P_opt(:, k) );
             end
 
+%             pwr = trace(P_opt * P_opt');
+
             minimize S;
-            subject to
+            subject to;
             pwr <= Pt;
 
             cvx_end
@@ -84,7 +87,7 @@ for p = 1:length(PtL)
             n = n + 1;
             if ~exist('Sold','var')
                 a = 1;
-            elseif n > 10 || abs(Sold - S) < .01 %to control while loop
+            elseif n > 5 %|| abs(Sold - S) < .01 %to control while loop
                 break;
             end
 
