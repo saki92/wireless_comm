@@ -4,11 +4,11 @@ clc;
 Nt = 2; %no of transmit antennas
 K = 2; %no of receivers
 Q = 1; %no of antennas per receiver
-M = 5; %no of channel realizations
+M = 1; %no of channel realizations
 sigma = 1; %noise covariance
-SNR = -5:5:15; %dB
+SNR = -5:5:35; %dB
 PtL = 10.^(SNR/10); %total transmit power
-noofit = 10; %no of validation iteration
+noofit = 30; %no of validation iteration
 
 %%%%%%%%%%% Channel %%%%%%%%%
 Hcap = ( 1/sqrt(2) ) * ( randn(Nt,K) + 1i*randn(Nt,K) ); %estimate
@@ -42,7 +42,8 @@ for p = 1:length(PtL) %for each SNR values
                     end
                     T(m,k) = abs( H(:,k,m)' * P(:,k,m) )^2 + Ik; %Average power
                     G(m,k) = P(:,k,m)' *H(:,k,m) / T(m,k); %Equalizer matrix
-                    U(m,k) = inv( T(m,k) \ Ik); %MMSE weights
+%                     U(m,k) = inv( T(m,k) \ Ik); %MMSE weights
+                    U(m,k) = T(m,k) / Ik; %MMSE weights
                     t(m,k) = U(m,k) * abs( G(m,k) )^2;
                     Psi(m,k,:,:) = t(m,k) * H(:,k,m) * H(:,k,m)';
                     f(m,k,:) = U(m,k) * H(:,k,m) * G(m,k)';
@@ -50,22 +51,22 @@ for p = 1:length(PtL) %for each SNR values
                 end
             end
 
-            P_opt_all = [];
         %%%%%%%%%%% CVX %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             cvx_begin quiet
             variable P_opt(Nt, K) complex;
 
             expression S;
+            S = 0;
             for k = 1:K
                 p_Psi = 0;
+                Psi_bar = reshape(mean(Psi(:,k,:,:),1),Nt,Nt);
+                Psi_bar = 0.5 * (Psi_bar + Psi_bar'); %to make it H
                 for i = 1:K
-                    Psi_bar = reshape(mean(Psi(:,k,:,:),1),Nt,Nt);
-                    Psi_bar = 0.5 * (Psi_bar + Psi_bar');
                     p_Psi = p_Psi + ( P_opt(:,i)' * Psi_bar * P_opt(:, i) );
                 end
                 temp_f = mean(f(:,k,:),1);
                 S = S + p_Psi + ( sigma * mean( t(:, k) ) ) - ( 2 * real(reshape...
-                    (temp_f(1,1,:),Nt,1)'*P_opt(:, k))) + mean( U(:, k) )...
+                    (temp_f,Nt,1)'*P_opt(:, k))) + mean( U(:, k) )...
                     - mean( v(:, k) );
             end
 
@@ -107,8 +108,8 @@ for p = 1:length(PtL) %for each SNR values
             gamma(k) = abs( Hcap(:,k)' * P(:,k,1) )^2 / Ik;
             Rate(k) = log2(1+gamma(k));
         end
-        SRate(ite) = sum(Rate); %sum rate for one set of error samples
+        SRate(ite, :) = Rate; %sum rate for one set of error samples
     end
-    AvRate(p) = mean(SRate); %averaged sum rate
+    AvRate(p) = sum(mean(SRate,1)); %averaged sum rate
 end
 plot(SNR, AvRate, '-b*');
