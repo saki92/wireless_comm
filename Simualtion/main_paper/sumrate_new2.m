@@ -4,16 +4,22 @@ clc;
 Nt = 2; %no of transmit antennas
 K = 2; %no of receivers
 Q = 1; %no of antennas per receiver
-M = 5; %no of channel realizations
+M = 5; %no of error samples
+MV = 20; %no of error samples for rate validation
 sigma = 1; %noise covariance
 SNR = -5:2:35; %dB
 PtL = 10.^(SNR/10); %total transmit power
 noofit = 10; %no of validation iteration
+error_var = 0.3; %alpha factor
+
 
 %%%%%%%%%%% Channel %%%%%%%%%
-Hcap = ( 1/sqrt(2) ) * ( randn(Nt,K) + 1i*randn(Nt,K) ); %estimate
-Htil = ( 1/sqrt(2) ) * ( randn(Nt,K,M,noofit) + 1i*randn(Nt,K,M,noofit) ); %error samples
+Hcap = ( 1/sqrt(2) ) * ( randn(Nt,K) + 1i*randn(Nt,K) )*sqrt(1- error_var); %estimate
+Htil = ( 1/sqrt(2) ) * ( randn(Nt,K,M,noofit) + 1i*randn(Nt,K,M,noofit) )*sqrt(error_var); %error samples
 H = Hcap + Htil; %actual
+
+HtilVal = ( 1/sqrt(2) ) * ( randn(Nt,K,MV) + 1i*randn(Nt,K,MV) )*sqrt(error_var);
+HVal = Hcap + HtilVal;
 %%%%%%%%%%% Channel %%%%%%%%%
 
 P = ( 1 / sumsqr(abs(Hcap')) * Hcap' ).'; %initial Tx vectors for all samples
@@ -93,17 +99,20 @@ for p = 1:length(PtL) %for each SNR values
         end
         %plot(1:n, SVal,'-b*');
         gamma = zeros(K,1);
-        for k = 1:K
-            Ik = 0;
-            for i = 1:K
-                if i ~= k
-                    Ik = Ik + abs( Hcap(:,k)' * P(:,i) )^2 + sigma; %Interfearence power
+        for m = 1:MV
+            
+            for k = 1:K
+                Ik = 0;
+                for i = 1:K
+                    if i ~= k
+                        Ik = Ik + abs( HVal(:,k,m)' * P(:,i) )^2 + sigma; %Interfearence power
+                    end
                 end
+                gamma(k) = abs( HVal(:,k,m)' * P(:,k) )^2 / Ik;
+                Rate(m,k) = log2(1+gamma(k));
             end
-            gamma(k) = abs( Hcap(:,k)' * P(:,k) )^2 / Ik;
-            Rate(k) = log2(1+gamma(k));
         end
-        SRate(ite, :) = Rate; %sum rate for one set of error samples
+        SRate(ite, :) = mean(Rate,1); %sum rate for one set of error samples
     end
     AvRate(p) = sum(mean(SRate,1)); %averaged sum rate
 end
