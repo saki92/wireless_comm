@@ -1,23 +1,24 @@
-function [ AvRate ] = sumRate_2_2( M )
+function [ AvRate ] = sumRate_2_2( M , SNR , Hcap, noofit, P)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 Nt = 2; %no of transmit antennas
 K = 2; %no of receivers
 %M = 5; %no of error samples
-MV = 20; %no of error samples for rate validation
+MV = M * 2 + 100; %no of error samples for rate validation
 sigma = 1; %noise covariance
-SNR = 5:3:35; %dB
+%SNR = 5:3:35; %dB
 PtL = 10.^(SNR/10); %total transmit power
-noofit = 10; %no of validation iteration
+%noofit = 1; %no of validation iteration
 alpha = 0.3; %
 
 %%%%%%%%%%% Channel %%%%%%%%%
-Hcap = ( 1/sqrt(2) ) * ( randn(Nt,K) + 1i*randn(Nt,K) ); %estimate
+%Hcap = ( 1/sqrt(2) ) * ( randn(Nt,K,1,noofit) + 1i*randn(Nt,K,1,noofit) ); %estimate
 Htil = ( 1/sqrt(2) ) * ( randn(Nt,K,M,noofit) + 1i*randn(Nt,K,M,noofit) ); %error samples
 
 HtilVal = ( 1/sqrt(2) ) * ( randn(Nt,K,MV,noofit) + 1i*randn(Nt,K,MV,noofit) );
 %%%%%%%%%%% Channel %%%%%%%%%
-P = ( 1 / sumsqr(abs(Hcap')) * Hcap' ).'; %initial Tx vectors for all samples
+%P = ( 1 / sumsqr(abs(Hcap')) * Hcap' ).'; %initial Tx vectors for all samples
+%P = ones(Nt,K);
 
 AvRate = zeros(length(SNR),1);
 for p = 1:length(PtL) %for each SNR values
@@ -90,7 +91,7 @@ for p = 1:length(PtL) %for each SNR values
             n = n + 1;
             if ~exist('Sold','var')
                 a = 1;
-            elseif n > 5 %|| abs(Sold - S) < .01 %to control while loop
+            elseif n > 20 %|| abs(Sold - S) < .01 %to control while loop
                 break;
             end
 
@@ -100,8 +101,7 @@ for p = 1:length(PtL) %for each SNR values
         end
         %plot(1:n, SVal,'-b*');
         gamma = zeros(K,1);
-        for m = 1:MV
-            
+        for m = 1:MV            
             for k = 1:K
                 Ik = 0;
                 for i = 1:K
