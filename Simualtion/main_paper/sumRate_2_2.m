@@ -1,4 +1,4 @@
-function [ AvRate ] = sumRate_2_2( M , SNR , Hcap, noofit, P)
+function [ AvRate ] = sumRate_2_2( M , SNR , Hcap, noofit, P, alpha)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 Nt = 2; %no of transmit antennas
@@ -9,7 +9,7 @@ sigma = 1; %noise covariance
 %SNR = 5:3:35; %dB
 PtL = 10.^(SNR/10); %total transmit power
 %noofit = 1; %no of validation iteration
-alpha = 0.3; %
+%alpha = 0.3; %
 
 %%%%%%%%%%% Channel %%%%%%%%%
 %Hcap = ( 1/sqrt(2) ) * ( randn(Nt,K,1,noofit) + 1i*randn(Nt,K,1,noofit) ); %estimate
